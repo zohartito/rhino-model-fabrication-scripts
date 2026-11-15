@@ -1,0 +1,58 @@
+# Heavy fabrication/model outputs
+*.3dm
+*.3dmbak
+*.3dm.rhl
+*.stl
+*.3mf
+*.gcode
+*.obj
+*.step
+*.stp
+*.dwg
+*.dxf
+
+# Screenshots / captures / exports
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.mov
+*.mp4
+*.gif
+*.zip
+
+# Generated folders
+output/
+outputs/
+generated_print_files/
+prototype_exact_clt_laser_output_*/
+bambu_slice_check*/
+tmp/
+release/
+
+# Python / local noise
+__pycache__/
+*.py[cod]
+*.log
+*.DS_Store
+
+
+# Additional Python environments and caches
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Additional Rhino recovery / exported fabrication files
+*.3dmbak*
+*.rhl
+*.bak
+*.ply
+*.off
+*.amf
+*.gco
+*.g
+*.bgcode
+*.gcode.gz
+*.gcode.3mf
