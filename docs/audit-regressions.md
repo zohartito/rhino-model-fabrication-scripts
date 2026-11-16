@@ -29,3 +29,18 @@ tests pass; the punched wall has 21 in² and one interior ring. Material from
 a separate Brep can still fill the opening. This is projected-edge reasoning,
 not a general solid projection: nested outlines are assumed to be openings,
 and recessed faces or complex overlapping projections still require review.
+
+## RMF-02: document insertion units
+
+`tests.test_rmf02_document_units.DocumentUnitTests` executes each exporter's
+actual packing functions, document-insertion loop, and 3DM writer with a
+rhino3dm geometry adapter and an in-memory document sink. It never imports
+the active-document scripts or RhinoCommon. Both inch and foot cases failed
+before the fix (25.4x and 304.8x scale errors); both millimeter controls passed.
+
+Both exporters now duplicate packed solids and convert those copies from mm
+back to document units before insertion. All six cases pass, including physical
+dimensions and placement, unmodified source/packed geometry, and reading back
+plate 3DM files with mm units and unchanged coordinates. The STL mesher still
+receives the same packed mm solids. Live Rhino insertion and STL meshing were
+not exercised.
