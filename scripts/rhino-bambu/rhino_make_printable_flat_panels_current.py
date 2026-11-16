@@ -387,7 +387,13 @@ try:
         attrs.LayerIndex = layer_index
         attrs.Name = "flat_panel_0p01in_plate{}".format(plate_index + 1)
         for solid in plate["solids"]:
-            sc.doc.Objects.AddBrep(solid, attrs)
+            # Keep the packed/export geometry in mm; insert a document-unit copy.
+            document_solid = solid.DuplicateBrep()
+            document_solid.Transform(Rhino.Geometry.Transform.Scale(
+                Rhino.Geometry.Point3d.Origin,
+                Rhino.RhinoMath.UnitScale(Rhino.UnitSystem.Millimeters, sc.doc.ModelUnitSystem),
+            ))
+            sc.doc.Objects.AddBrep(document_solid, attrs)
 
         meshes = []
         for solid in plate["solids"]:

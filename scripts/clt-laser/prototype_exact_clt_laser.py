@@ -26,6 +26,7 @@ import collections
 import json
 import math
 import os
+import tempfile
 import time
 from dataclasses import dataclass
 from typing import Iterable, Iterator, Sequence
@@ -33,7 +34,7 @@ from xml.sax.saxutils import escape
 
 import rhino3dm
 from shapely import affinity
-from shapely.geometry import GeometryCollection, LineString, MultiLineString, box
+from shapely.geometry import GeometryCollection, LineString, MultiLineString, Polygon, box
 from shapely.ops import polygonize, unary_union
 
 
@@ -247,7 +248,15 @@ def polygons_from_brep_edges(
         if not polygons:
             failed.append((item.index, item.name, "polygonize produced no area"))
             continue
-        panel_polys.extend(polygons)
+        # polygonize also emits each opening as a separate polygon. Classify
+        # nested regions within this Brep before unioning material across Breps.
+        # Even nesting depth is material; odd depth is an opening.
+        shells = [Polygon(poly.exterior) for poly in polygons]
+        for poly in polygons:
+            point = poly.representative_point()
+            depth = sum(shell.contains(point) for shell in shells) - 1
+            if depth % 2 == 0:
+                panel_polys.append(poly)
 
     if not panel_polys:
         return GeometryCollection(), {
@@ -407,7 +416,10 @@ def write_sheet_svg(path: str, sheet: dict) -> None:
         paths.append(("blue", [(float(x), float(y)) for x, y in score.coords]))
 
     label = "{} R{}C{}".format(sheet["side"].upper(), sheet["row"], sheet["col"])
-    with open(path, "w", encoding="utf-8") as f:
+    # Exclusive creation also refuses symlinks where O_NOFOLLOW is unavailable.
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<svg xmlns="http://www.w3.org/2000/svg" width="12in" height="12in" viewBox="0 0 12 12">\n')
         f.write('<rect x="0" y="0" width="12" height="12" fill="none" stroke="#ffcc00" stroke-width="0.003"/>\n')
@@ -489,8 +501,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(args.out_root, "prototype_exact_clt_laser_output_{}".format(stamp))
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(args.out_root, exist_ok=True)
+    out_dir = tempfile.mkdtemp(
+        prefix="prototype_exact_clt_laser_output_{}_".format(stamp), dir=args.out_root
+    )
 
     log("Reading 3dm: {}".format(args.source))
     start = time.time()
@@ -555,7 +569,7 @@ def main() -> None:
         "scale": "1 ft real = 0.5 in physical model",
         "score_spacing": "5 ft real = 2.5 in model",
         "stock": "12 x 12 in with 0.125 in margin",
-        "method": "Brep edge curves projected to side elevation, polygonized per panel, then unioned by side.",
+        "method": "Brep edge curves projected to side elevation, polygonized and classified by even/odd nesting per panel, then material unioned by side.",
         "rhino3dm_limitations": "No BrepLoop/BrepTrim access and no Rhino curve boolean/projection helpers; non-polyline NURBS edges are sampled.",
         "rhinocommon_notes": RHINOCOMMON_NOTES,
         "curve_objects_on_duplicate_layers_note": "{} same-name NurbsCurve objects were found, all named SOUTH_CLT_*; the prototype reports them but uses Breps for both SOUTH and WEST.".format(len(curve_objects)),

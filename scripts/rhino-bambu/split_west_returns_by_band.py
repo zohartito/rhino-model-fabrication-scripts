@@ -101,6 +101,13 @@ def collect_returns(model: rhino3dm.File3dm, layer_index: int):
             unmatched.append({"object_index": object_index, "name": name, "type": type(obj.Geometry).__name__})
             continue
         return_id, side = parsed
+        if side in returns[return_id]:
+            previous = returns[return_id][side]
+            raise RuntimeError(
+                f"Duplicate West return {return_id:03d} side {side}: "
+                f"object {previous['object_index']} ({previous['name']!r}) and "
+                f"object {object_index} ({name!r})"
+            )
         returns[return_id][side] = {
             "object_index": object_index,
             "name": name,
