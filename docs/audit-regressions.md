@@ -44,3 +44,16 @@ dimensions and placement, unmodified source/packed geometry, and reading back
 plate 3DM files with mm units and unchanged coordinates. The STL mesher still
 receives the same packed mm solids. Live Rhino insertion and STL meshing were
 not exercised.
+
+## RMF-03: duplicate return sides
+
+`tests.test_rmf03_duplicate_returns.DuplicateReturnTests` checks both collection
+and the complete headless splitter on a five-surface input with two sill objects
+sharing one return ID. Both rejection tests failed before the fix: no error was
+raised. The four-unique-side export and unmatched-object control passed.
+
+Collection now rejects a duplicate `(return ID, side)` before overwriting the
+first object or writing band files. The error identifies both object-table
+indices and names, even when different names parse to the same key. All three
+tests pass; the valid case still writes four ordered surfaces in a mm 3DM and
+reports unmatched objects in its manifest.
