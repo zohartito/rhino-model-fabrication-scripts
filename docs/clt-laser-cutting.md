@@ -62,3 +62,8 @@ path/to/your-model.3dm
 ```
 
 Keep generated cut files in a separate output folder and verify which model revision supplied them.
+
+The edge-curve prototype creates a new private run directory under `--out-root`
+with a timestamp and random suffix. It never reuses a previous run directory;
+its SVG writer rejects existing paths, including symlinks, instead of replacing
+them. Use the output path printed at the end of the run.

@@ -57,3 +57,19 @@ first object or writing band files. The error identifies both object-table
 indices and names, even when different names parse to the same key. All three
 tests pass; the valid case still writes four ordered surfaces in a mm 3DM and
 reports unmatched objects in its manifest.
+
+## RMF-04: exclusive SVG creation and private run directories
+
+`tests.test_rmf04_output_safety.OutputSafetyTests` reproduced target truncation
+through both a direct SVG symlink and a symlink inside a precreated timestamp
+directory. Dangling links created their targets, existing files were replaced,
+and two runs in the same second reused one directory. Those five tests failed;
+the normal cut/hole/score SVG control passed.
+
+Each prototype run now creates a unique private directory (`0700`) with a
+random suffix after the timestamp. SVG creation is exclusive (`O_EXCL` with
+`O_CREAT`, plus `O_NOFOLLOW` where available) and uses mode `0600`. Existing files
+and symlinks raise an OS error without changing their targets. All six tests
+pass, including normal SVG output and separate complete outputs for same-second
+runs. This protects the shared-output-directory case; it does not promise
+isolation from another process running as the same user.

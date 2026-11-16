@@ -26,6 +26,7 @@ import collections
 import json
 import math
 import os
+import tempfile
 import time
 from dataclasses import dataclass
 from typing import Iterable, Iterator, Sequence
@@ -415,7 +416,10 @@ def write_sheet_svg(path: str, sheet: dict) -> None:
         paths.append(("blue", [(float(x), float(y)) for x, y in score.coords]))
 
     label = "{} R{}C{}".format(sheet["side"].upper(), sheet["row"], sheet["col"])
-    with open(path, "w", encoding="utf-8") as f:
+    # Exclusive creation also refuses symlinks where O_NOFOLLOW is unavailable.
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<svg xmlns="http://www.w3.org/2000/svg" width="12in" height="12in" viewBox="0 0 12 12">\n')
         f.write('<rect x="0" y="0" width="12" height="12" fill="none" stroke="#ffcc00" stroke-width="0.003"/>\n')
@@ -497,8 +501,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(args.out_root, "prototype_exact_clt_laser_output_{}".format(stamp))
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(args.out_root, exist_ok=True)
+    out_dir = tempfile.mkdtemp(
+        prefix="prototype_exact_clt_laser_output_{}_".format(stamp), dir=args.out_root
+    )
 
     log("Reading 3dm: {}".format(args.source))
     start = time.time()
