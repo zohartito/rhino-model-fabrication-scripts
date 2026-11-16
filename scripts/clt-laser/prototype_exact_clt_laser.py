@@ -33,7 +33,7 @@ from xml.sax.saxutils import escape
 
 import rhino3dm
 from shapely import affinity
-from shapely.geometry import GeometryCollection, LineString, MultiLineString, box
+from shapely.geometry import GeometryCollection, LineString, MultiLineString, Polygon, box
 from shapely.ops import polygonize, unary_union
 
 
@@ -247,7 +247,15 @@ def polygons_from_brep_edges(
         if not polygons:
             failed.append((item.index, item.name, "polygonize produced no area"))
             continue
-        panel_polys.extend(polygons)
+        # polygonize also emits each opening as a separate polygon. Classify
+        # nested regions within this Brep before unioning material across Breps.
+        # Even nesting depth is material; odd depth is an opening.
+        shells = [Polygon(poly.exterior) for poly in polygons]
+        for poly in polygons:
+            point = poly.representative_point()
+            depth = sum(shell.contains(point) for shell in shells) - 1
+            if depth % 2 == 0:
+                panel_polys.append(poly)
 
     if not panel_polys:
         return GeometryCollection(), {
@@ -555,7 +563,7 @@ def main() -> None:
         "scale": "1 ft real = 0.5 in physical model",
         "score_spacing": "5 ft real = 2.5 in model",
         "stock": "12 x 12 in with 0.125 in margin",
-        "method": "Brep edge curves projected to side elevation, polygonized per panel, then unioned by side.",
+        "method": "Brep edge curves projected to side elevation, polygonized and classified by even/odd nesting per panel, then material unioned by side.",
         "rhino3dm_limitations": "No BrepLoop/BrepTrim access and no Rhino curve boolean/projection helpers; non-polyline NURBS edges are sampled.",
         "rhinocommon_notes": RHINOCOMMON_NOTES,
         "curve_objects_on_duplicate_layers_note": "{} same-name NurbsCurve objects were found, all named SOUTH_CLT_*; the prototype reports them but uses Breps for both SOUTH and WEST.".format(len(curve_objects)),
