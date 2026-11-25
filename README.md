@@ -33,7 +33,7 @@ The [script inventory](scripts/README.md) lists the runtime, exact selection ass
 
 Scripts importing `Rhino`, `scriptcontext`, `rhinoscriptsyntax`, or `System.Drawing` need the Rhino environment; the inventory assigns them to the Rhino 8 script editor with CPython 3. A file-based script that imports `Rhino` still needs RhinoCommon. It is not a standalone `rhino3dm` script.
 
-The seven headless scripts use CPython 3 with `rhino3dm` and/or Shapely, or `trimesh` and NumPy. Dependencies and their versions have not been installed or exercised for this copy. No script was identified as IronPython 2.7-only from its syntax; compatibility with IronPython has not been tested.
+The seven headless scripts use CPython 3 with `rhino3dm` and/or Shapely, or `trimesh` and NumPy. The bounded [audit regressions](docs/audit-regressions.md) use `rhino3dm` and Shapely on synthetic geometry; other dependencies and workflows have not been exercised for this copy. No script was identified as IronPython 2.7-only from its syntax; compatibility with IronPython has not been tested.
 
 Before adapting a script, inspect its selection logic and constants, replace the `path/to/...` settings, and create the needed output/log directories. `DEFAULT_MODEL_PATH` is only a fallback for an unsaved active document; saved documents still supply their own paths, and several scripts export alongside them. Work on a model copy. Cleanup scripts can delete earlier generated objects, hide layers, and save a new file.
 
@@ -50,6 +50,6 @@ The notes preserve the original fabrication reasoning. They do not supply the ab
 
 ## Validation of this copy
 
-All 23 scripts passed `python3 -m py_compile` with CPython 3.15.2. This checks syntax only: it does not import Rhino or other dependencies, open a model, evaluate geometry, or run any script. No Rhino, slicer, printer, or laser validation was performed. Geometry logic and numerical parameters were retained.
+At initial publication, all 23 scripts passed `python3 -m py_compile` with CPython 3.15.2. This checks syntax only: it does not import Rhino or other dependencies, open a model, evaluate geometry, or run any script. Subsequent targeted fixes and headless regression evidence are recorded in [audit regressions](docs/audit-regressions.md). No Rhino, slicer, printer, or laser validation was performed.
 
 Model files, meshes, print jobs, and other generated fabrication assets are excluded. See [LICENSE](LICENSE) for the MIT license.
